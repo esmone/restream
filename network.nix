@@ -15,8 +15,14 @@ let
       };
 
       stream-bunny = pkgs.writeScriptBin "stream-bunny" ''
-        stream=''${1:-rtmp://localhost/live/stream}
+        stream=''${1:-rtmp://localhost/pub_secret/stream}
         ${pkgs.ffmpeg-full}/bin/ffmpeg -re -i ${bunny} -acodec copy -vcodec copy -f flv $stream
+      '';
+
+      restreamer = pkgs.writeScriptBin "restreamer" ''
+        #!${pkgs.bash}/bin/bash
+        export PATH_FFMPEG=${pkgs.ffmpeg-full}/bin/ffmpeg
+        exec ${pkgs.python}/bin/python ${./restreamer.py} "$@"
       '';
 
       nginx = import ./nginx.nix {
@@ -25,6 +31,7 @@ let
         user = "nginx";
         group = "nginx";
         ffmpeg = pkgs.ffmpeg-full;
+        restream = "${restreamer}/bin/restreamer";
         stateDir = "/tmp";
         errorLog = "stderr";
         accessLog = "/tmp/access.log";
@@ -56,8 +63,8 @@ in {
       systemd.services.nginx = let cfg = config.extra.nginx; in {
         wantedBy = [ "multi-user.target" ];
         script = let s = pkgs.writeScript "nginx" ''
-          ${pkgs.coreutils}/bin/mkdir ${cfg.stateDir}/logs
-          ${cfg.package}/bin/nginx -c ${cfg.configFile}  -p ${cfg.stateDir}
+          ${pkgs.coreutils}/bin/mkdir -p ${cfg.stateDir}/logs
+          exec ${cfg.package}/bin/nginx -c ${cfg.configFile}  -p ${cfg.stateDir}
         ''; in "${s}";
       };
   };

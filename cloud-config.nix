@@ -7,6 +7,17 @@ in {
 
   networking.firewall.enable = false;
 
+  environment.systemPackages = [
+    pkgs.psmisc
+    pkgs.htop
+    config.boot.kernelPackages.sysdig
+    config.boot.kernelPackages.perf
+  ];
+  boot.extraModulePackages = [
+    config.boot.kernelPackages.sysdig
+  ];
+  boot.kernelModules = [ "sysdig-probe" ];
+
   security.pam.loginLimits = [ # login sessions only, not systemd services
     { domain = "*"; type = "hard"; item = "core"; value = core-limit; }
     { domain = "*"; type = "soft"; item = "core"; value = core-limit; }

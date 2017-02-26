@@ -1,4 +1,4 @@
-cfg@{ pkgs, package, user, group, ffmpeg, stateDir, errorLog, accessLog, ... }:
+cfg@{ pkgs, restream, package, user, group, ffmpeg, stateDir, errorLog, accessLog, ... }:
 
 let
   # where does logs/error.log come from??
@@ -180,10 +180,19 @@ in cfg // rec {
           allow play 127.0.0.1;
           deny play all;
 
-          exec_push ${ffmpeg}/bin/ffmpeg -i rtmp://localhost/pub_${PUBLISH_SECRET}/$name
-            -filter:v scale=-1:460
-            -c:a libfdk_aac -b:a 32k  -c:v libx264 -b:v 128k  -f flv rtmp://localhost/hls/$name_128
-            -c:a libfdk_aac -b:a 128k -c:v libx264 -b:v 512k  -f flv rtmp://localhost/hls/$name_512;
+          exec_push ${restream} rtmp://localhost/pub_${PUBLISH_SECRET}/$name >>${stateDir}/restreamer.log 2>&1;
+
+          # exec_push ${ffmpeg}/bin/ffmpeg -i rtmp://localhost/pub_${PUBLISH_SECRET}/$name
+          #   -filter:v scale=-1:460
+          #   -c:a libfdk_aac -b:a 32k  -c:v libx264 -b:v 128k  -f flv rtmp://localhost/hls/$name_128
+          #   -c:a libfdk_aac -b:a 128k -c:v libx264 -b:v 512k  -f flv rtmp://localhost/hls/$name_512;
+        }
+
+        application norestream {
+          live on;
+          drop_idle_publisher 5s;
+          allow play 127.0.0.1;
+          deny play all;
         }
 
         application player {
