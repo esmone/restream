@@ -10,7 +10,7 @@ import logging.handlers
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-handler = logging.handlers.SysLogHandler(address='/dev/log')
+handler = logging.handlers.SysLogHandler(address='/var/run/syslog' if sys.platform == 'darwin' else '/dev/log')
 logger.addHandler(handler)
 
 
