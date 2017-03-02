@@ -6,7 +6,7 @@ let
     deployment.virtualbox.headless = true;
   };
 
-  extra-pkgs = { lib, pkgs, ... }: {
+  extra-pkgs = { lib, pkgs, config, ... }: {
     options.extra = lib.mkOption { type = lib.types.attrsOf lib.types.unspecified; };
     config.extra = rec {
       bunny = pkgs.fetchurl {
@@ -28,17 +28,27 @@ let
       nginx = import ./nginx.nix {
         inherit pkgs;
         package = pkgs.nginx;
-        user = "nginx";
-        group = "nginx";
+        user = "www";
+        group = "www";
         ffmpeg = pkgs.ffmpeg-full;
         restream = "${restreamer}/bin/restreamer";
         stateDir = "/tmp";
         errorLog = "stderr";
         accessLog = "/tmp/access.log";
+        script = let cfg = config.extra.nginx; in pkgs.writeScript "nginx" ''
+          ${pkgs.coreutils}/bin/mkdir -p ${cfg.stateDir}/logs
+          exec ${cfg.package}/bin/nginx -c ${cfg.configFile} -p ${cfg.stateDir}
+        '';
       };
     };
   };
-in {
+in rec {
+  eval-config = import <nixpkgs/nixos/lib/eval-config.nix>;
+
+  eval = eval-config {
+    modules = [ extra-pkgs ];
+  };
+
   restream =
     { resources, pkgs, config, ... }: {
       imports = [
@@ -62,10 +72,7 @@ in {
 
       systemd.services.nginx = let cfg = config.extra.nginx; in {
         wantedBy = [ "multi-user.target" ];
-        script = let s = pkgs.writeScript "nginx" ''
-          ${pkgs.coreutils}/bin/mkdir -p ${cfg.stateDir}/logs
-          exec ${cfg.package}/bin/nginx -c ${cfg.configFile}  -p ${cfg.stateDir}
-        ''; in "${s}";
+        script = "${cfg.script}";
       };
   };
 }
