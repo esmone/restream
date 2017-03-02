@@ -188,21 +188,35 @@ in cfg // rec {
           #   -c:a libfdk_aac -b:a 128k -c:v libx264 -b:v 512k  -f flv rtmp://localhost/hls/$name_512;
         }
 
+        # same as above but no PUBLISH_SECRET expansion
+        application restream {
+          live on;
+          drop_idle_publisher 5s;
+          allow play all;
+          exec_push ${restream} rtmp://localhost/restream/$name >>${stateDir}/restreamer.log 2>&1;
+        }
+
         application norestream {
           live on;
           drop_idle_publisher 5s;
-          allow play 127.0.0.1;
-          deny play all;
+          allow play all; # 127.0.0.1;
+          #deny play all;
         }
 
         application player {
           live on;
-
           allow publish 127.0.0.1;
           deny publish all;
+          pull rtmp://localhost/restream live=1;
+          wait_key on;
+          wait_video on;
+        }
 
-          pull rtmp://localhost/pub_${PUBLISH_SECRET} live=1;
-
+        application noplayer {
+          live on;
+          allow publish 127.0.0.1;
+          deny publish all;
+          pull rtmp://localhost/norestream live=1;
           wait_key on;
           wait_video on;
         }
