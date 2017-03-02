@@ -63,7 +63,7 @@ def run_loop(source, list_of_targets):
                 ps[target] = popen(ffmpeg_restream(source, target))
                 continue
             contents = p.stdout.readline()
-            logger.info(contents)
+            logger.info('[%s]: %s' % (target, contents.strip()))
 
 
 def main():
