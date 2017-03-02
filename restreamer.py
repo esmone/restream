@@ -10,7 +10,8 @@ import logging.handlers
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-handler = logging.handlers.SysLogHandler(address='/var/run/syslog' if sys.platform == 'darwin' else '/dev/log')
+#handler = logging.handlers.SysLogHandler(address='/var/run/syslog' if sys.platform == 'darwin' else '/dev/log')
+handler = logging.FileHandler('/tmp/restreamerpy.log')
 logger.addHandler(handler)
 
 
@@ -61,7 +62,7 @@ def run_loop(source, list_of_targets):
                   target, p.returncode))
                 ps[target] = popen(ffmpeg_restream(source, target))
                 continue
-            contents = p.stdout.read()
+            contents = p.stdout.readline()
             logger.info(contents)
 
 
